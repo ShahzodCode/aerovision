@@ -1,7 +1,11 @@
 import { createClient } from '@supabase/supabase-js';
 
-const url = import.meta.env.VITE_SUPABASE_URL as string | undefined;
-const key = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
+// The URL and anon (public) key are safe to ship in the page: row-level security protects the data.
+// Paste the anon / publishable key from Supabase -> Settings -> API Keys below.
+const PROJECT_URL = 'https://hrnaoylfuradrjhwzmfh.supabase.co';
+const ANON_KEY = '';
+const url = (import.meta.env.VITE_SUPABASE_URL as string | undefined) || PROJECT_URL;
+const key = (import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined) || ANON_KEY;
 
 export const configured = !!url && !!key && !url.includes('YOUR-PROJECT');
 export const db = createClient(url || 'http://localhost', key || 'missing');
