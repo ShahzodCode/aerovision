@@ -10,7 +10,7 @@ import { request } from './pages/request';
 import { about } from './pages/about';
 import { login } from './pages/login';
 import { admin } from './pages/admin';
-import { LINKS } from './supabase';
+import { t, loadContent, onContent } from './content';
 
 route('home', home);
 route('events', events);
@@ -48,14 +48,17 @@ const drawNav = () => {
   drawTheme();
 };
 
-app.append(nav, h('div', { class: 'wrap' }, main),
-  h('footer', {}, h('div', { class: 'wrap row between' },
-    h('span', {}, '© Aero Vision · a public team'),
-    h('span', { class: 'row' },
-      h('a', { href: `mailto:${LINKS.email}` }, 'Email'),
-      h('a', { href: LINKS.instagram, target: '_blank', rel: 'noopener' }, 'Instagram'),
-      h('a', { href: LINKS.telegram, target: '_blank', rel: 'noopener' }, 'Telegram')))));
+const footer = h('footer');
+const drawFooter = () => footer.replaceChildren(h('div', { class: 'wrap row between' },
+  h('span', {}, t('footer.text')),
+  h('span', { class: 'row' },
+    h('a', { href: `mailto:${t('contact.email')}` }, 'Email'),
+    h('a', { href: t('contact.instagram'), target: '_blank', rel: 'noopener' }, 'Instagram'),
+    h('a', { href: t('contact.telegram'), target: '_blank', rel: 'noopener' }, 'Telegram'))));
+app.append(nav, h('div', { class: 'wrap' }, main), footer);
+onContent(drawFooter);
 drawNav();
 onAuth(() => { drawNav(); void render(); });
+await loadContent();
 start(main);
 void refreshMe();

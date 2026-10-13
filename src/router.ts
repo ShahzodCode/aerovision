@@ -8,6 +8,7 @@ let token = 0;
 export const route = (path: string, page: Page) => { routes[path] = page; };
 
 export async function render() {
+  if (!outlet) return; // auth events can fire before the first page is started
   const my = ++token;
   const [path, arg] = location.hash.replace(/^#\/?/, '').split('/');
   const page = routes[path || 'home'] ?? routes.notfound;

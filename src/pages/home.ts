@@ -1,5 +1,6 @@
 import { db, EventRow, Post, Survey } from '../supabase';
 import { me } from '../auth';
+import { t } from '../content';
 import { h, empty, toast, field, area, select, section } from '../ui';
 import { eventCard, when } from './events';
 import { postCard } from './blog';
@@ -11,20 +12,18 @@ export async function home() {
     db.from('surveys').select('*').eq('open', true).order('created_at', { ascending: false }),
   ]);
   const next = ((ev.data as EventRow[]) ?? []).filter((e) => when(e) !== 'past').slice(0, 3);
-  const step = (n: string, t: string, p: string) => h('div', { class: 'step' }, h('b', {}, n), h('h3', {}, t), h('p', {}, p));
+  const step = (n: string) => h('div', { class: 'step' }, h('b', {}, '0' + n), h('h3', {}, t(`home.step${n}_title`)), h('p', {}, t(`home.step${n}_text`)));
 
   return h('div', {},
     h('section', { class: 'hero' },
-      h('p', { class: 'eyebrow' }, 'A public team'),
-      h('h1', {}, 'Build, fly and learn ', h('em', {}, 'together.')),
-      h('p', { class: 'lead' }, 'Aero Vision started in a school. Now it is open to everyone: join the team, or organize your own event under the Aero Vision name.'),
+      h('p', { class: 'eyebrow' }, t('home.eyebrow')),
+      h('h1', {}, t('home.title_a') + ' ', h('em', {}, t('home.title_b'))),
+      h('p', { class: 'lead' }, t('home.lead')),
       h('div', { class: 'row' },
         h('a', { class: 'btn', href: '#/request/join' }, 'Join the team'),
         h('a', { class: 'btn ghost', href: '#/events' }, 'Browse events'))),
     h('section', { class: 'steps' },
-      step('01', 'Everyone can join', 'No school or membership needed. Send a request and you are in.'),
-      step('02', 'Organize your event', 'We give you a place (a school for now) and the support to run it on behalf of the team.'),
-      step('03', 'Make an account', 'Your name is filled in automatically when you register for events.')),
+      step('1'), step('2'), step('3')),
     section('Next events',
       h('div', { class: 'list' }, ...(next.length ? next.map((e) => eventCard(e))
         : [empty('No events planned yet', ev.error?.message ?? 'Have an idea? Request one.')])),

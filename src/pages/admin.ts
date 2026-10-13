@@ -2,9 +2,10 @@ import { db, RequestRow, EventRow, Survey, Question, Profile } from '../supabase
 import { me } from '../auth';
 import { h, fmtDate, field, input, area, select, empty, toast, downloadCsv } from '../ui';
 import { when } from './events';
+import { DEFAULTS, raw, loadContent } from '../content';
 
-type Tab = 'overview' | 'requests' | 'events' | 'blog' | 'surveys' | 'team' | 'users';
-const TABS: [Tab, string][] = [['overview', 'Overview'], ['requests', 'Requests'], ['events', 'Events'], ['blog', 'Blog'], ['surveys', 'Surveys'], ['team', 'Team'], ['users', 'Users']];
+type Tab = 'overview' | 'site' | 'requests' | 'events' | 'blog' | 'surveys' | 'team' | 'users';
+const TABS: [Tab, string][] = [['overview', 'Overview'], ['site', 'Site pages'], ['requests', 'Requests'], ['events', 'Events'], ['blog', 'Blog'], ['surveys', 'Surveys'], ['team', 'Team'], ['users', 'Users']];
 let tab: Tab = 'overview';
 let goTab: (t: Tab) => void = () => {};
 
@@ -22,7 +23,7 @@ export async function admin() {
     tab = t;
     bar.replaceChildren(...TABS.map(([k, label]) => h('button', { class: 'tab' + (k === tab ? ' on' : ''), onclick: () => show(k) }, label)));
     body.replaceChildren(h('div', { class: 'panel skel' }));
-    body.replaceChildren(await ({ overview, requests, events, blog, surveys, team, users }[t])(() => show(t)));
+    body.replaceChildren(await ({ overview, site, requests, events, blog, surveys, team, users }[t])(() => show(t)));
   };
   goTab = (t) => void show(t);
   await show(tab);
@@ -244,4 +245,44 @@ async function users(again: () => void) {
         p.id === me!.id ? null : h('button', { class: 'btn small ghost', onclick: () =>
           confirm(p.role === 'admin' ? `Remove admin rights from ${p.email}?` : `Make ${p.email} an admin? They will be able to manage everything.`) &&
           run(db.from('profiles').update({ role: p.role === 'admin' ? 'user' : 'admin' }).eq('id', p.id), again) }, p.role === 'admin' ? 'Remove admin' : 'Make admin'))))));
+}
+
+/* ---------- editable site text (home page, About us, contact links, footer) ---------- */
+const SITE_GROUPS: { title: string; fields: { key: string; label: string; area?: boolean; hint?: string }[] }[] = [
+  { title: 'Home page', fields: [
+    { key: 'home.eyebrow', label: 'Small text above the headline' },
+    { key: 'home.title_a', label: 'Headline (first part)' },
+    { key: 'home.title_b', label: 'Headline (highlighted part)' },
+    { key: 'home.lead', label: 'Introduction', area: true },
+    { key: 'home.step1_title', label: 'Block 1 title' }, { key: 'home.step1_text', label: 'Block 1 text', area: true },
+    { key: 'home.step2_title', label: 'Block 2 title' }, { key: 'home.step2_text', label: 'Block 2 text', area: true },
+    { key: 'home.step3_title', label: 'Block 3 title' }, { key: 'home.step3_text', label: 'Block 3 text', area: true } ] },
+  { title: 'About us page', fields: [
+    { key: 'about.intro', label: 'Introduction', area: true },
+    { key: 'about.body', label: 'Extra text (optional)', area: true, hint: 'Blank line = new paragraph. “## ” = heading, “- ” = bullet list. Team members are edited in the Team tab.' } ] },
+  { title: 'Contact links (About us + footer)', fields: [
+    { key: 'contact.email', label: 'Email address' },
+    { key: 'contact.instagram', label: 'Instagram link' },
+    { key: 'contact.telegram', label: 'Telegram link' },
+    { key: 'footer.text', label: 'Footer text' } ] },
+];
+
+async function site() {
+  const inputs = new Map<string, HTMLInputElement | HTMLTextAreaElement>();
+  const groups = SITE_GROUPS.map((g) => h('div', { class: 'panel form' }, h('h3', {}, g.title),
+    ...g.fields.map((f) => {
+      const el = f.area ? area(raw(f.key), f.key === 'about.body' ? 8 : 3) : input('text', raw(f.key));
+      el.placeholder = DEFAULTS[f.key] ? DEFAULTS[f.key] : '';
+      inputs.set(f.key, el);
+      return field(f.label, el, f.hint);
+    })));
+  const save = h('button', { class: 'btn' }, 'Save changes');
+  const form = h('form', { class: 'list', onsubmit: async (e: Event) => {
+    e.preventDefault();
+    const rows = [...inputs].map(([key, el]) => ({ key, value: el.value.trim() }));
+    const { error } = await db.from('site_content').upsert(rows);
+    if (error) return toast(error.message + ' — did you run supabase/update-3.sql?', true);
+    await loadContent(); toast('Site updated. Open the pages to see the changes.');
+  } }, h('p', { class: 'note' }, 'Leave a box empty to use the default text (shown in grey).'), ...groups, h('div', {}, save));
+  return form;
 }

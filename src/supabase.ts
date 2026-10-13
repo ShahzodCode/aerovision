@@ -16,10 +16,3 @@ export type Post = { id: string; title: string; excerpt: string; body: string; i
 export type Member = { id: string; name: string; role: string; bio: string; photo_url: string; sort: number };
 export type RequestRow = { id: string; kind: string; name: string; email: string; message: string; details: Record<string, string>; status: string; created_at: string };
 export type Profile = { id: string; full_name: string; email: string; role: 'user' | 'admin'; created_at: string };
-
-// Replace with your real contact details.
-export const LINKS = {
-  email: 'hello@aerovision.example',
-  instagram: 'https://instagram.com/aerovision',
-  telegram: 'https://t.me/aerovision',
-};
